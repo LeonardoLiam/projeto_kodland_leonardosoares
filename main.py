@@ -386,16 +386,20 @@ menu = Menu()
 def update():
     if game_state == "menu":
         if status_sound:
+            sounds.adventure.stop()
             sounds.opening.play(-1)
             menu.options[2] = "Som: On"
         else:
             sounds.opening.stop()
+            sounds.adventure.stop()
             menu.options[2] = "Som: Off"
     
     elif game_state == "play":
         if status_sound:
+            sounds.opening.stop()
             sounds.adventure.play(-1)
         else:
+            sounds.opening.stop()
             sounds.adventure.stop()
 
         game.update()
