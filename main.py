@@ -75,14 +75,14 @@ class Enemy:
 
         if circle_rect_collide(center, radius, enemy_rect) and radius != 0:
             self.hp -= blow.attack
+            sounds.attack.play()
 
     def draw(self):
         self.actor.draw()
 
 class SuperHero:
     def __init__(self):
-        self.actor = Actor('superhero', (WIDTH / 2, HEIGHT / 2))
-        self.actor.angle = 0
+        self.actor = Actor('hero1', (WIDTH / 2, HEIGHT / 2))
         self.hp = 15
         self.max_hp = 15
         self.xp = 0
@@ -92,29 +92,79 @@ class SuperHero:
         self.speed = 2
         self.cooldown = 50
         self.cooldown_max = 50
+        self.position = ''
+        self.animation = False
+        self.actual_image = 'hero5'
+    
+    def change_image(self):
+        
+        if self.actual_image == "hero5" + self.position:
+            self.actual_image = "hero6" + self.position
+        else:
+            self.actual_image = "hero5" + self.position
+        self.actor.image = self.actual_image
 
+        
     def move(self):
         
         self.actor.x = max(0, min(self.actor.x, 1024))
         self.actor.y = max(0, min(self.actor.y, 1024))
+        
 
+        
         if keyboard.left:
+
+            self.position = '_flip'
             self.actor.x -= self.speed
-            self.actor.angle = 180
+            if self.actor.image in ("hero1" + self.position, "hero2" + self.position, "hero3" + self.position):
+                self.actor.image = "hero4" + self.position
+                self.animation = False
+                clock.unschedule(self.change_image)
+            else: 
+                if not self.animation:
+                    self.animation = True
+                    clock.schedule_interval(self.change_image, 0.5)
+                
+
         if keyboard.right:
+            
+            self.position = ''
             self.actor.x += self.speed
-            self.actor.angle = 0
+            if self.actor.image in ("hero1" + self.position, "hero2" + self.position, "hero3" + self.position):
+                self.actor.image = "hero4" + self.position
+                self.animation = False
+                clock.unschedule(self.change_image)
+            else: 
+                if not self.animation:
+                    self.animation = True
+                    clock.schedule_interval(self.change_image, 0.5)
+            
         if keyboard.up:
             self.actor.y -= self.speed
-            self.actor.angle = 90
         if keyboard.down:
             self.actor.y += self.speed
-            self.actor.angle = 270
+
+        
+        if not (keyboard.left or keyboard.right or keyboard.up or keyboard.down):
+            self.actor.image = "hero1" + self.position
+            if self.animation:
+                self.animation = False
+                clock.unschedule(self.change_image)
+
+                
+        if not (keyboard.left or keyboard.right):
+            if self.animation:
+                self.animation = False
+                clock.unschedule(self.change_image)
+            self.actor.image = "hero1" + self.position
+
+
 
     def attack_enemy(self, enemies):
         for enemy in enemies:
             if precise_collision(self.actor, enemy.actor):
                 self.hp -= round(enemy.attack / 200, 2)
+                sounds.pain.play()
 
     def gain_xp(self, amount):
         self.xp += amount
@@ -197,6 +247,7 @@ class Game:
 
 
         if self.hero.hp <= 0:
+            sounds.death.play()
             self.lost = True
 
         circle_center = (self.hero.actor.x, self.hero.actor.y)
@@ -331,7 +382,7 @@ class Game:
         elif option == '+1 Velocidade':
             self.hero.speed += 0.5
         elif option == 'Blow':
-            self.blow.interval -= 25
+            self.blow.interval -= 15
         elif option == '+1 HP':
             self.hero.hp += 2
 
@@ -382,27 +433,51 @@ game_state = "menu"
 status_sound = True
 game = Game()
 menu = Menu()
+last_stage_option = None
+last_status_sound = None
+
+def tocar_opening():
+    if status_sound:
+        sounds.opening.play()
+        clock.schedule(tocar_opening, sounds.opening.get_length())
+
+def tocar_adventure():
+    if status_sound:
+        sounds.adventure.play()
+        clock.schedule(tocar_adventure, sounds.adventure.get_length())
+
+def parar_todas_trilhas():
+    sounds.opening.stop()
+    sounds.adventure.stop()
+    clock.unschedule(tocar_opening)
+    clock.unschedule(tocar_adventure)
+
 
 def update():
-    if game_state == "menu":
-        if status_sound:
-            sounds.adventure.stop()
-            sounds.opening.play(-1)
-            menu.options[2] = "Som: On"
-        else:
-            sounds.opening.stop()
-            sounds.adventure.stop()
-            menu.options[2] = "Som: Off"
-    
-    elif game_state == "play":
-        if status_sound:
-            sounds.opening.stop()
-            sounds.adventure.play(-1)
-        else:
-            sounds.opening.stop()
-            sounds.adventure.stop()
+    global last_stage_option, last_status_sound
 
+    if game_state != last_stage_option or status_sound != last_status_sound:
+        parar_todas_trilhas()
+
+        if game_state == "menu":
+
+            if status_sound:
+                tocar_opening()
+                menu.options[2] = "Som: On"
+            else:
+                menu.options[2] = "Som: Off"
+
+        elif game_state == "play":
+            if status_sound:
+                tocar_adventure()
+
+        last_stage_option = game_state # Atualiza o estado anterior
+        last_status_sound = status_sound
+        
+
+    if game_state == "play":
         game.update()
+
 
 def draw():
     screen.clear()
@@ -421,6 +496,28 @@ def on_key_down(key):
         game_state = menu.on_key_down(key)
     elif game_state == "play":
         game.on_key_down(key)
+
+
+# def update():
+#     if game_state == "menu":
+#         if status_sound:
+#             sounds.adventure.stop()
+#             sounds.opening.play(-1)
+#             menu.options[2] = "Som: On"
+#         else:
+#             sounds.opening.stop()
+#             sounds.adventure.stop()
+#             menu.options[2] = "Som: Off"
+    
+#     elif game_state == "play":
+#         if status_sound:
+#             sounds.opening.stop()
+#             sounds.adventure.play(-1)
+#         else:
+#             sounds.opening.stop()
+#             sounds.adventure.stop()
+
+#         game.update()
 
 
 def circle_rect_collide(circle_center, circle_radius, rect):
