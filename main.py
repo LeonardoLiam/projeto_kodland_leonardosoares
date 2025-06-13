@@ -334,9 +334,9 @@ class Game:
         self.enemies_defeat = 0
         self.endgame = EndGame('')
 
-        clock.schedule_interval(self.atualizar_tempo, 1.0)
+        clock.schedule_interval(self.update_time, 1.0)
 
-    def atualizar_tempo(self):
+    def update_time(self):
         if not (self.paused or self.upgrade or self.won or self.lost):
             self.time_passed += 1
             if self.time_passed >= 300:
