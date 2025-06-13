@@ -535,7 +535,6 @@ class Menu:
 
     def draw(self):
         screen.clear()
-        # screen.draw.text(self.title, center = (WIDTH//2, 100), fontsize=60)
         screen.blit('opening', (0,0))
         
         for i, option in enumerate(self.options):
